@@ -1,34 +1,44 @@
 package confchat;
 
-import rice.environment.Environment;
-import rice.p2p.commonapi.*;
 import rice.pastry.*;
 import rice.pastry.socket.*;
-
-import java.io.IOException;
+import rice.environment.Environment;
 import java.net.InetAddress;
 
 public class PastryNodeExample {
-    public static void main(String[] args) throws IOException {
-        // Port to bind to
-        int bindport = 9001;
-
-
-        // Host for the node
-        InetAddress host = InetAddress.getLocalHost();
-        int bootPort = 9001;
-
-
-        // Create an Environment instance (required for FreePastry)
+    public static void main(String[] args) throws Exception {
+        // Set up the Pastry environment
         Environment env = new Environment();
 
-
-        // Create node and bootstrap using the Environment
+        // Create a RandomNodeIdFactory for generating unique node IDs
         NodeIdFactory nidFactory = new rice.pastry.standard.RandomNodeIdFactory(env);
-        SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
+
+        // Specify the port to bind to
+        int bindPort = 9001;
+
+        // Set up a PastryNodeFactory
+        PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindPort, env);
+
+        // Create a PastryNode
         PastryNode node = factory.newNode();
 
-        System.out.println("Created new node with ID:  " + node.getId().toStringFull());
+        // Print the Node's ID to verify setup
+        System.out.println("Created new node with ID: " + node.getId().toString());
+
+        // Wait until the node is ready to start
+        synchronized (node) {
+            while (!node.isReady()) {
+                node.wait(500);
+            }
+        }
+
+        System.out.println("Node is ready!");
+
+        ChatApp app = new ChatApp(node);
+
+        // Start the command line interface
+        app.startCLI();
+
 
     }
 }
