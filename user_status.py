@@ -3,32 +3,21 @@ from file_utils import *
 # In-memory set to track online users
 online_users = set()
 
-def login_user(username):
-    """Mark a user as online."""
-    username = normalize_username(username)
-    data = load_data()
+async def login_user(username, kademlia_node):
+    """Mark a user as online in the DHT."""
+    key = f"{username}:status"
+    await kademlia_node.store(key, "online")
+    print(f"'{username}' is now online.")
 
-    if username in data:
-        data[username]["online"] = True  # Set user as online
-        save_data(data)
-        print(f"'{username}' is now online.")
-    else:
-        print(f"Error: User '{username}' does not exist.")
+async def logout_user(username, kademlia_node):
+    """Mark a user as offline in the DHT."""
+    key = f"{username}:status"
+    await kademlia_node.store(key, "offline")
+    print(f"'{username}' is now offline.")
 
-def logout_user(username):
-    """Mark a user as offline."""
-    username = normalize_username(username)
-    data = load_data()
-
-    if username in data:
-        data[username]["online"] = False  # Set user as offline
-        save_data(data)
-        print(f"'{username}' is now offline.")
-    else:
-        print(f"Error: User '{username}' does not exist.")
-
-def is_user_online(username):
+async def is_user_online(username, kademlia_node):
     """Check if a user is online."""
-    username = normalize_username(username)
-    data = load_data()
-    return data.get(username, {}).get("online", False)
+    key = f"{username}:status"
+    status = await kademlia_node.retrieve(key)
+    return status == "online"
+

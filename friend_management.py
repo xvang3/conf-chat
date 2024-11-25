@@ -125,3 +125,30 @@ def view_friends(username):
         print("Your friends:", ", ".join(friends))
 
 
+async def check_online_friends(username, kademlia_node):
+    """Check which of a user's friends are online using Kademlia."""
+    username = normalize_username(username)
+    data = load_data()
+
+    if username not in data:
+        print(f"Error: User '{username}' does not exist.")
+        return
+
+    friends = [normalize_username(friend) for friend in data[username].get("friends", [])]
+
+    if not friends:
+        print("You have no friends.")
+        return
+
+    online_friends = []
+    offline_friends = []
+
+    for friend in friends:
+        status = await kademlia_node.retrieve(f"{friend}:status")
+        if status == "online":
+            online_friends.append(friend)
+        else:
+            offline_friends.append(friend)
+
+    print(f"Online friends: {', '.join(online_friends) if online_friends else 'None'}")
+    print(f"Offline friends: {', '.join(offline_friends) if offline_friends else 'None'}")
