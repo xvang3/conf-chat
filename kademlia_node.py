@@ -22,6 +22,7 @@ class KademliaNode:
     async def get(self, key):
         if not self.server.protocol.router.get_known_peers():
             # Retrieve locally if no neighbors
+            print(f"Retrieving locally: {key}")
             return self.local_store.get(key)
         return await self.server.get(key)
 

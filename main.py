@@ -1,6 +1,5 @@
-import logging
-from kademlia_node import KademliaNode
 import asyncio
+from kademlia_node import KademliaNode
 
 async def main():
     node_type = input("Is this the first node? (yes/no): ").strip().lower()
@@ -23,3 +22,6 @@ async def main():
         retrieved_value = await second_node.get("test_key")
         print(f"Retrieved value for 'test_key' from bootstrap node: {retrieved_value}")
         await second_node.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
