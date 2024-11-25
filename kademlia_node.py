@@ -1,10 +1,10 @@
 from kademlia.network import Server
 
-
 class KademliaNode:
     def __init__(self, port):
         self.port = port
         self.server = Server()
+        self.local_store = {}  # Local storage for standalone nodes
 
     async def start(self, bootstrap_nodes=None):
         await self.server.listen(self.port)
@@ -12,12 +12,19 @@ class KademliaNode:
             await self.server.bootstrap(bootstrap_nodes)
 
     async def set(self, key, value):
-        print(f"Storing key: {key}, value: {value}")
-        await self.server.set(key, value)
+        if not self.server.protocol.router.get_known_peers():
+            # If no neighbors, store locally
+            self.local_store[key] = value
+            print(f"Storing locally: {key} -> {value}")
+        else:
+            await self.server.set(key, value)
 
     async def get(self, key):
-        print(f"Retrieving key: {key}")
+        if not self.server.protocol.router.get_known_peers():
+            # Retrieve locally if no neighbors
+            return self.local_store.get(key)
         return await self.server.get(key)
 
     async def stop(self):
-        await self.server.stop()
+        if self.server.transport:
+            await self.server.stop()
