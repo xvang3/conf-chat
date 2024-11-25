@@ -31,14 +31,28 @@ def check_user_exists(username):
     return username in users
 
 def add_to_global_users(username):
-    """Add a username to the global user list."""
-    ensure_global_users_file()  # Ensure the file is ready
-    with open(GLOBAL_USERS_FILE, "r") as f:
-        users = json.load(f)
+    """Add a user to the global users.json."""
+    global_users_file = os.path.join(BASE_DIR, "users.json")
+
+    # Ensure users.json exists
+    if not os.path.exists(global_users_file):
+        with open(global_users_file, "w") as f:
+            json.dump([], f)
+
+    # Load existing users
+    with open(global_users_file, "r") as f:
+        try:
+            users = json.load(f)
+            if not isinstance(users, list):
+                raise ValueError("users.json must contain a list.")
+        except (json.JSONDecodeError, ValueError):
+            users = []
+
+    # Add the new user if not already present
     if username not in users:
         users.append(username)
-        with open(GLOBAL_USERS_FILE, "w") as f:
+        with open(global_users_file, "w") as f:
             json.dump(users, f, indent=4)
-        print(f"Added '{username}' to global users.")
+        print(f"User '{username}' added to global users.")
     else:
-        print(f"User '{username}' already exists.")
+        print(f"User '{username}' already exists in global users.")

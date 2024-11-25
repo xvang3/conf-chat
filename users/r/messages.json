@@ -1,8 +1,0 @@
-{
-    "tcp://localhost:6001": [
-        {
-            "message": "hello",
-            "from": "you"
-        }
-    ]
-}

@@ -30,16 +30,15 @@ def ensure_base_directory():
 ensure_base_directory()
 
 def create_user_directory(username):
-    """Create a directory for a new user."""
     user_dir = os.path.join(BASE_DIR, username)
     if not os.path.exists(user_dir):
         os.makedirs(user_dir)
         print(f"Created user directory: {user_dir}")
-        # Initialize empty files
         for file_name in ["user_data.json", "messages.json", "friends.json", "group_chats.json"]:
             with open(os.path.join(user_dir, file_name), "w") as f:
                 f.write("{}")
     return user_dir
+
 
 def load_user_data(user_dir, file_name):
     """Load data from a user's file."""
@@ -70,24 +69,36 @@ def find_available_server_port(base_port=6000, max_attempts=100):
     return None
 
 def register():
+    """Register a new user."""
     username = input("Enter a username: ").strip()
     password = input("Enter a password: ").strip()
 
+    # Create user directory
     user_dir = create_user_directory(username)
+
+    # Load existing user data
     user_data = load_user_data(user_dir, "user_data.json")
 
+    # Check if the user already exists
     if "password" in user_data:
         print("User already exists.")
         return
 
+    # Save user credentials
     user_data["password"] = password
     save_user_data(user_dir, "user_data.json", user_data)
-    add_to_global_users(username)
-    print(f"User {username} registered successfully.")
+
+    # Add the user to global users.json
+    try:
+        add_to_global_users(username)
+        print(f"User {username} registered successfully.")
+    except Exception as e:
+        print(f"Failed to register user: {e}")
+
 
 def login():
-    username = input("Enter your username: ")
-    password = input("Enter your password: ")
+    username = input("Enter your username: ").strip()
+    password = input("Enter your password: ").strip()
 
     user_dir = os.path.join(BASE_DIR, username)
     if not os.path.exists(user_dir):
@@ -96,8 +107,12 @@ def login():
 
     # Verify password
     user_file = os.path.join(user_dir, "user_data.json")
-    with open(user_file, "r") as f:
-        user_data = json.load(f)
+    try:
+        with open(user_file, "r") as f:
+            user_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Error reading user data.")
+        return
 
     if user_data.get("password") != password:
         print("Incorrect password.")
@@ -112,10 +127,19 @@ def login():
         print("Failed to synchronize data.")
 
     # Mark user as online
-    update_online_users(username, action="login")
+    try:
+        update_online_users(username, action="login")
+    except Exception as e:
+        print(f"Error marking user as online: {e}")
+        return
+
+    # Verify online status update
+    print("Debug: Current online users after login:")
+    print(get_online_users())
 
     # Show logged-in menu
     logged_in_menu(username, user_dir)
+
 
 
 def check_friends_status(user_dir, current_user):
@@ -125,14 +149,19 @@ def check_friends_status(user_dir, current_user):
         print("You have no friends yet.")
         return
 
-    # Load the server's online users directly
-    try:
-        with open(os.path.join(SERVER_BASE_DIR, "online_users.json"), "r") as f:
-            online_users = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Error reading online users data.")
-        online_users = []
+    # Scan possible peer addresses for online users
+    online_users = {}
+    for port in range(6000, 6010):  # Scan ports 6000-6009
+        peer_address = f"http://localhost:{port}/get_online_users"
+        try:
+            response = requests.get(peer_address)
+            if response.status_code == 200:
+                peer_online_users = response.json().get("online_users", {})
+                online_users.update(peer_online_users)
+        except requests.RequestException:
+            continue  # Ignore unreachable peers
 
+    # Check friend statuses
     print("Friend status:")
     has_online_friends = False
     for friend in friends:
@@ -143,8 +172,14 @@ def check_friends_status(user_dir, current_user):
             has_online_friends = True
         else:
             print(f"{friend}: Offline")
+
     if not has_online_friends:
         print("No friends online.")
+
+
+
+
+
 
 
 
@@ -162,6 +197,19 @@ def check_friends_status(user_dir, current_user):
                 print(f"Failed to update user status: {response.text}")
         except requests.RequestException as e:
             print(f"Error communicating with server: {e}")
+
+def discover_peers(port_range=(6000, 6010)):
+    """Discover active peers in the given port range."""
+    peers = []
+    for port in range(*port_range):
+        peer_address = f"http://localhost:{port}"
+        try:
+            response = requests.get(f"{peer_address}/ping")
+            if response.status_code == 200:
+                peers.append(peer_address)
+        except requests.RequestException:
+            continue  # Ignore unreachable peers
+    return peers
 
 
 def live_chat(user_dir, username):
@@ -223,6 +271,7 @@ def live_chat(user_dir, username):
 from utils.friends import add_friend, remove_friend, check_user_exists
 
 def logged_in_menu(username, user_dir):
+    print(f"Debug: Entered logged_in_menu for {username}")  # Debug line
     while True:
         print(f"\nLogged in as {username}")
         print("1. Send a message")
@@ -234,6 +283,7 @@ def logged_in_menu(username, user_dir):
         print("7. Start live chat")
         print("8. Logout")
         choice = input("Choose an option: ").strip()
+        print(f"Debug: User selected option {choice}")  
 
         if choice == "1":
             recipient = input("Enter the recipient's username: ")
@@ -261,29 +311,21 @@ def logged_in_menu(username, user_dir):
 
 
 def logout(username):
-    """Mark the user as offline by removing them from the server's online users."""
+    """Mark the user as offline."""
     try:
-        # Path to the online users file
         online_users_file = os.path.join(SERVER_BASE_DIR, "online_users.json")
+        online_users = get_online_users()
 
-        # Load online users
-        with open(online_users_file, "r+") as f:
-            online_users = json.load(f)
-            if not isinstance(online_users, list):
-                raise ValueError("online_users.json is not formatted as a list.")
-
-            # Remove the user if they exist in the list
-            if username in online_users:
-                online_users.remove(username)
-                # Write back the updated list
-                f.seek(0)
-                f.truncate()
+        if username in online_users:
+            del online_users[username]
+            with open(online_users_file, "w") as f:
                 json.dump(online_users, f, indent=4)
-                print(f"User '{username}' logged out successfully.")
-            else:
-                print(f"User '{username}' was not marked as online.")
-    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
-        print(f"Error updating online users: {e}. Could not log out.")
+            print(f"User '{username}' logged out successfully.")
+        else:
+            print(f"User '{username}' is not marked as online.")
+    except Exception as e:
+        print(f"Error during logout: {e}")
+
 
 
 
@@ -317,15 +359,17 @@ def start_node():
 
 
 def bootstrap_to_network(node_port):
-    """Bootstrap this node to the network."""
+    print(f"Debug: Starting bootstrapping for node_port {node_port}")
     try:
-        response = requests.post(f"{SERVER_ADDRESS}/register_node", json={"port": node_port})
+        response = requests.post(f"{SERVER_ADDRESS}/register_node", json={"port": node_port}, timeout=3)
         if response.status_code == 200:
             print("Bootstrapped to the network successfully.")
         else:
             print(f"Failed to bootstrap to the network: {response.json().get('error', 'Unknown error')}")
     except requests.RequestException as e:
         print(f"Error during bootstrapping: {e}")
+    print(f"Debug: Finished bootstrapping for node_port {node_port}")
+
 
 
 if __name__ == "__main__":

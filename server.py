@@ -1,6 +1,7 @@
 import os
 import json
 from flask import Flask, request, jsonify
+import requests
 
 # Flask app setup
 app = Flask(__name__)
@@ -62,33 +63,54 @@ def add_user(username):
 
 
 def get_online_users():
-    """Retrieve the list of currently online users."""
     try:
         with open(ONLINE_USERS_FILE, "r") as f:
             online_users = json.load(f)
             if not isinstance(online_users, dict):
-                raise ValueError
+                raise ValueError("online_users.json is not formatted as a dictionary.")
         return online_users
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError, FileNotFoundError):
         print("Corrupted online_users.json file detected. Reinitializing...")
         with open(ONLINE_USERS_FILE, "w") as f:
-            json.dump({}, f)
+            json.dump({}, f)  # Initialize as an empty dictionary
         return {}
 
 
+
+
 def update_online_users(username, action):
-    """Update the online_users.json file."""
+    """Update online users by scanning all possible ports."""
     online_users = get_online_users()
-    if action == "login" and username not in online_users:
-        online_users.append(username)
+
+    # Update local user status
+    if action == "login":
+        online_users[username] = "online"
     elif action == "logout" and username in online_users:
-        online_users.remove(username)
+        del online_users[username]
+
+    # Scan possible peers for updates
+    for port in range(6000, 6010):  # Scan ports 6000-6009
+        peer_address = f"http://localhost:{port}/user_status"
+        try:
+            response = requests.post(peer_address, json={"username": username, "action": action})
+            if response.status_code == 200:
+                print(f"Updated status on peer {peer_address}")
+        except requests.RequestException as e:
+            print(f"Failed to contact peer {peer_address}: {e}")
+
+    # Save local changes
     with open(ONLINE_USERS_FILE, "w") as f:
         json.dump(online_users, f, indent=4)
     print(f"User '{username}' marked as {action}.")
 
 
 # Flask Endpoints
+
+@app.route("/ping", methods=["GET"])
+def ping():
+    """Health check for the node."""
+    return jsonify({"status": "active"}), 200
+
 @app.route("/user_status", methods=["POST"])
 def user_status():
     """Update user status (online/offline)."""
@@ -129,6 +151,32 @@ def get_all_users_endpoint():
     """Retrieve the list of all registered users."""
     users = get_all_users()
     return jsonify({"users": users}), 200
+
+@app.route("/sync", methods=["GET"])
+def get_sync_data():
+    """Provide server data to clients for synchronization."""
+    try:
+        # Assuming friends and messages are stored on the server
+        return jsonify({
+            "friends": get_all_users(),  # Example: Replace with actual data structure
+            "messages": {}  # Example: Add actual message syncing logic
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/sync", methods=["POST"])
+def update_sync_data():
+    """Receive and merge data from clients."""
+    try:
+        incoming_data = request.json
+        if not incoming_data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Handle synchronization logic here (e.g., merge incoming data with server data)
+
+        return jsonify({"message": "Data synchronized successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # Server Startup
