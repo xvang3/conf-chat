@@ -1,1 +1,8 @@
-{}
+{
+    "bob": [
+        {
+            "message": "Hello Bob",
+            "from": "you"
+        }
+    ]
+}

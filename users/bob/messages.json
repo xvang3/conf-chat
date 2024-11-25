@@ -1,1 +1,20 @@
-{}
+{
+    "hello Mary": [
+        {
+            "message": "hello",
+            "from": "you"
+        }
+    ],
+    "mary": [
+        {
+            "message": "hello Mary",
+            "from": "you"
+        }
+    ],
+    "alice": [
+        {
+            "message": "hello Alice",
+            "from": "bob"
+        }
+    ]
+}

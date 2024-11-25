@@ -276,7 +276,7 @@ def logged_in_menu(username, user_dir):
         if choice == "1":
             recipient = input("Enter the recipient's username: ")
             message = input("Enter your message: ")
-            send_message(user_dir, recipient, message)
+            send_message(user_dir, recipient, message, username)
         elif choice == "2":
             receive_messages(user_dir)
         elif choice == "3":
