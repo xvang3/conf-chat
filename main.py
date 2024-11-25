@@ -29,6 +29,22 @@ def ensure_base_directory():
 
 ensure_base_directory()
 
+# Function to start the node in the background
+def run_node():
+    """Run the node in a background thread."""
+    node_socket, node_port = start_node()
+    print(f"Node started and listening on {node_port}.")
+
+    # Keep the node alive to listen for incoming P2P messages
+    while True:
+        try:
+            message = node_socket.recv_json()
+            print(f"Node: Received message -> {message}")
+            node_socket.send_json({"status": "received", "message": "Acknowledged"})
+        except zmq.ZMQError as e:
+            print(f"Node error: {e}")
+            break
+
 def create_user_directory(username):
     user_dir = os.path.join(BASE_DIR, username)
     if not os.path.exists(user_dir):
@@ -105,14 +121,8 @@ def login():
         print(f"User {username} does not exist.")
         return
 
-    # Verify password
-    user_file = os.path.join(user_dir, "user_data.json")
-    try:
-        with open(user_file, "r") as f:
-            user_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Error reading user data.")
-        return
+    with open(os.path.join(user_dir, "user_data.json"), "r") as f:
+        user_data = json.load(f)
 
     if user_data.get("password") != password:
         print("Incorrect password.")
@@ -120,24 +130,10 @@ def login():
 
     print(f"Welcome back, {username}!")
 
-    # Sync with the server or peers
-    if sync_with_peer_or_server(user_dir):
-        print(f"Synchronized user data for {username}.")
-    else:
-        print("Failed to synchronize data.")
+    # Synchronize in a separate thread
+    sync_thread = threading.Thread(target=sync_with_peer_or_server, args=(user_dir,), daemon=True)
+    sync_thread.start()
 
-    # Mark user as online
-    try:
-        update_online_users(username, action="login")
-    except Exception as e:
-        print(f"Error marking user as online: {e}")
-        return
-
-    # Verify online status update
-    print("Debug: Current online users after login:")
-    print(get_online_users())
-
-    # Show logged-in menu
     logged_in_menu(username, user_dir)
 
 
@@ -149,32 +145,24 @@ def check_friends_status(user_dir, current_user):
         print("You have no friends yet.")
         return
 
-    # Scan possible peer addresses for online users
-    online_users = {}
-    for port in range(6000, 6010):  # Scan ports 6000-6009
-        peer_address = f"http://localhost:{port}/get_online_users"
-        try:
-            response = requests.get(peer_address)
-            if response.status_code == 200:
-                peer_online_users = response.json().get("online_users", {})
-                online_users.update(peer_online_users)
-        except requests.RequestException:
-            continue  # Ignore unreachable peers
+    try:
+        # Read online users from shared file
+        with open("server_data/online_users.json", "r") as f:
+            online_users = json.load(f)
 
-    # Check friend statuses
-    print("Friend status:")
-    has_online_friends = False
-    for friend in friends:
-        if friend == current_user:
-            continue  # Skip self
-        if friend in online_users:
-            print(f"{friend}: Online")
-            has_online_friends = True
-        else:
-            print(f"{friend}: Offline")
+        print("Friend status:")
+        for friend in friends:
+            if friend == current_user:
+                continue
+            if friend in online_users:
+                print(f"{friend}: Online")
+            else:
+                print(f"{friend}: Offline")
+    except FileNotFoundError:
+        print("No online users data available.")
+    except json.JSONDecodeError:
+        print("Error reading online users data.")
 
-    if not has_online_friends:
-        print("No friends online.")
 
 
 
@@ -311,24 +299,24 @@ def logged_in_menu(username, user_dir):
 
 
 def logout(username):
-    """Mark the user as offline."""
+    """Mark the user as offline by updating shared file."""
     try:
-        online_users_file = os.path.join(SERVER_BASE_DIR, "online_users.json")
-        online_users = get_online_users()
-
-        if username in online_users:
-            del online_users[username]
-            with open(online_users_file, "w") as f:
-                json.dump(online_users, f, indent=4)
-            print(f"User '{username}' logged out successfully.")
-        else:
-            print(f"User '{username}' is not marked as online.")
+        with open("server_data/online_users.json", "r+") as f:
+            online_users = json.load(f)
+            if username in online_users:
+                del online_users[username]  # Remove the user
+            f.seek(0)
+            f.truncate()
+            json.dump(online_users, f, indent=4)
+        print(f"User '{username}' logged out successfully.")
     except Exception as e:
         print(f"Error during logout: {e}")
 
 
 
 
+
+# Main function
 def main_menu():
     """Main menu for the application."""
     while True:
@@ -374,15 +362,12 @@ def bootstrap_to_network(node_port):
 
 if __name__ == "__main__":
     ensure_base_directory()
-    SERVER_ADDRESS = find_available_server_port()
-    if SERVER_ADDRESS:
-        print(f"Using server at {SERVER_ADDRESS}.")
-    else:
-        print("Proceeding without a server.")
 
-    # Start the node and bootstrap
-    node_socket, node_port = start_node()
-    bootstrap_to_network(node_port)
+    # Start the node in a background thread
+    node_thread = threading.Thread(target=run_node, daemon=True)
+    node_thread.start()
 
-    # Run the main menu for user interactions
+    # Launch the CLI
     main_menu()
+
+

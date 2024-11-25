@@ -13,7 +13,7 @@ def sync_with_peer_or_server(user_dir):
     }
 
     try:
-        response = requests.get(f"{SERVER_ADDRESS}/sync")
+        response = requests.get(f"{SERVER_ADDRESS}/sync", timeout=5)  # Add a timeout
         if response.status_code == 200:
             server_data = response.json()
             merged_data = {
