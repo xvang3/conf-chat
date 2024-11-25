@@ -14,7 +14,7 @@ async def main():
         await first_node.stop()
     else:
         second_node = KademliaNode(39059)
-        bootstrap_nodes = [("<STANDALONE_SERVER_IP>", 8468)]  # Replace with actual bootstrap server IP
+        bootstrap_nodes = [("10.138.0.5", 8468)]  # Replace with actual bootstrap server IP
         await second_node.start(bootstrap_nodes=bootstrap_nodes)
         print("Second node started on port 39059.")
         retrieved_value = await second_node.get("test_key")

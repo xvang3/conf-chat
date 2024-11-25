@@ -24,7 +24,7 @@ class KademliaNode:
         if not self.server.protocol.router.find_neighbors(self.server.node):
             # Query the standalone server as a fallback
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"http://<STANDALONE_SERVER_IP>:8468/get/{key}") as resp:
+                async with session.get(f"http:10.138.0.5:8468/get/{key}") as resp:
                     if resp.status == 200:
                         return await resp.text()
             print(f"No neighbors and no response from standalone server for: {key}")
