@@ -2,21 +2,29 @@ import asyncio
 from kademlia.network import Server
 import logging
 
-# Enable debug logging
-logging.basicConfig(level=logging.DEBUG)
+class BootstrapServer:
+    def __init__(self, port=8468):
+        self.port = port
+        self.server = Server()
+        self.local_store = {}  # Fallback dictionary for key-value storage
 
-async def run_bootstrap_server():
-    print("Starting the bootstrap server on port 8468...")
-    server = Server()
-    await server.listen(8468)
-    print("Bootstrap server is running on port 8468.")
-    print("Press Ctrl+C to stop the server.")
+    async def start(self):
+        await self.server.listen(self.port)
+        print(f"Bootstrap server started on port {self.port}")
+        while True:
+            await asyncio.sleep(3600)  # Keep the server running
 
-    try:
-        await asyncio.Future()  # Keep the server running
-    except asyncio.CancelledError:
-        print("Stopping bootstrap server...")
-        await server.stop()
+    async def set_local(self, key, value):
+        self.local_store[key] = value
+        print(f"Stored locally: {key} -> {value}")
+
+    async def get_local(self, key):
+        value = self.local_store.get(key, None)
+        print(f"Retrieved locally: {key} -> {value}")
+        return value
 
 if __name__ == "__main__":
-    asyncio.run(run_bootstrap_server())
+    logging.basicConfig(level=logging.DEBUG)
+    bootstrap_server = BootstrapServer()
+
+    asyncio.run(bootstrap_server.start())

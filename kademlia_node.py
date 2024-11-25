@@ -1,4 +1,5 @@
 from kademlia.network import Server
+import aiohttp
 
 class KademliaNode:
     def __init__(self, port):
@@ -21,10 +22,15 @@ class KademliaNode:
 
     async def get(self, key):
         if not self.server.protocol.router.find_neighbors(self.server.node):
-            # Retrieve locally if no neighbors
-            print(f"Retrieving locally: {key}")
-            return self.local_store.get(key)
+            # Query the standalone server as a fallback
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"http://<STANDALONE_SERVER_IP>:8468/get/{key}") as resp:
+                    if resp.status == 200:
+                        return await resp.text()
+            print(f"No neighbors and no response from standalone server for: {key}")
+            return None
         return await self.server.get(key)
+
 
     async def stop(self):
         if self.server.transport:

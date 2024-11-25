@@ -4,7 +4,6 @@ from kademlia_node import KademliaNode
 async def main():
     node_type = input("Is this the first node? (yes/no): ").strip().lower()
     if node_type == "yes":
-        # First node
         first_node = KademliaNode(8468)
         await first_node.start()
         print("First node started on port 8468.")
@@ -14,13 +13,12 @@ async def main():
         print(f"Retrieved value for 'test_key': {retrieved_value}")
         await first_node.stop()
     else:
-        # Second node
         second_node = KademliaNode(39059)
-        bootstrap_nodes = [("10.138.0.2", 8468)]  # Replace with actual bootstrap node IPs
+        bootstrap_nodes = [("<STANDALONE_SERVER_IP>", 8468)]  # Replace with actual bootstrap server IP
         await second_node.start(bootstrap_nodes=bootstrap_nodes)
         print("Second node started on port 39059.")
         retrieved_value = await second_node.get("test_key")
-        print(f"Retrieved value for 'test_key' from bootstrap node: {retrieved_value}")
+        print(f"Retrieved value for 'test_key' from bootstrap server: {retrieved_value}")
         await second_node.stop()
 
 if __name__ == "__main__":
