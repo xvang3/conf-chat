@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/xue_vang/Desktop/UAA Fall 2024/conf-chat/venv/bin/python3" "$0" "$@"
+'''exec' "/home/xue_vang/Desktop/UAA Fall 2024/conf-chat2/venv/bin/python3" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re

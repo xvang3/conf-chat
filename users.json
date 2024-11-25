@@ -1,43 +1,9 @@
-{
-    "zero": {
-        "password": "f9194e73f9e9459e3450ea10a179cdf77aafa695beecd3b9344a98d111622243",
-        "friends": [
-            "xero",
-            "lisa"
-        ],
-        "messages": [],
-        "requests": [],
-        "online": false
-    },
-    "xero": {
-        "password": "1dd8cb03d5dc9395eb21d9988e104a1de25673a0fc52b9e65f43fecc29e01dfa",
-        "friends": [
-            "zero"
-        ],
-        "messages": [],
-        "requests": [],
-        "online": false
-    },
-    "lisa": {
-        "password": "864282b76c39e6748fa8b9accb2953bc89a3ec4f6c5ca1627624d6a58edd5619",
-        "friends": [
-            "zero"
-        ],
-        "requests": [],
-        "messages": []
-    },
-    "alice": {
-        "password": "2bd806c97f0e00af1a1fc3328fa763a9269723c8db8fac4f93af71db186d6e90",
-        "friends": [],
-        "requests": [],
-        "online": false,
-        "messages": []
-    },
-    "bob": {
-        "password": "81b637d8fcd2c6da6359e6963113a1170de795e4b725b84d1e0b4cfd9ec58ce9",
-        "friends": [],
-        "requests": [],
-        "online": false,
-        "messages": []
-    }
-}
+[
+    "1",
+    "b",
+    "3",
+    "r",
+    "t",
+    "john",
+    "jacob"
+]

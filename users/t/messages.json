@@ -1,0 +1,14 @@
+{
+    "tcp://localhost:6000": [
+        {
+            "message": "hello",
+            "from": "you"
+        }
+    ],
+    "tcp://localhost:6001": [
+        {
+            "from": "you",
+            "message": "hello"
+        }
+    ]
+}
