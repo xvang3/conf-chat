@@ -6,7 +6,8 @@
             "lisa"
         ],
         "messages": [],
-        "requests": []
+        "requests": [],
+        "online": false
     },
     "xero": {
         "password": "1dd8cb03d5dc9395eb21d9988e104a1de25673a0fc52b9e65f43fecc29e01dfa",
@@ -14,7 +15,8 @@
             "zero"
         ],
         "messages": [],
-        "requests": []
+        "requests": [],
+        "online": false
     },
     "lisa": {
         "password": "864282b76c39e6748fa8b9accb2953bc89a3ec4f6c5ca1627624d6a58edd5619",
