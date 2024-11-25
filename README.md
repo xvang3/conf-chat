@@ -95,6 +95,8 @@ Cannot Connect to Peer:
     - Ensure both peers have logged in and synchronized their data.
     
 
+Methodology:
 
+The P2P Architecture does not necessarily work as I had intended, but here was my original idea for the system. A server exists to hold data, just in case there are no online nodes and a new node joins. It and gather data and sync it with this server, but it does not need the server to exist. If new nodes join and there are existing nodes, it will sync its data from them instead (at first anyways). When a new user is registered, they will have their own directory in the local system, this is to simulate that if they were actually their own endpoint system, they would store some data of the network in themselves. When performing functions, these nodes will sync with each other and/or the server as a way to stay up to date. When users run main.py it is as if they are connecting to the network, but in this simulation, they are connecting to a port. 
 
 
