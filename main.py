@@ -1,3 +1,7 @@
+import logging
+from kademlia_node import KademliaNode
+import asyncio
+
 async def main():
     node_type = input("Is this the first node? (yes/no): ").strip().lower()
     if node_type == "yes":
