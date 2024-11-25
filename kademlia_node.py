@@ -12,7 +12,7 @@ class KademliaNode:
             await self.server.bootstrap(bootstrap_nodes)
 
     async def set(self, key, value):
-        if not self.server.protocol.router.get_known_peers():
+        if not self.server.protocol.router.contacts:
             # If no neighbors, store locally
             self.local_store[key] = value
             print(f"Storing locally: {key} -> {value}")
@@ -20,7 +20,7 @@ class KademliaNode:
             await self.server.set(key, value)
 
     async def get(self, key):
-        if not self.server.protocol.router.get_known_peers():
+        if not self.server.protocol.router.contacts:
             # Retrieve locally if no neighbors
             print(f"Retrieving locally: {key}")
             return self.local_store.get(key)
