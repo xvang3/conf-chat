@@ -1,9 +1,9 @@
 import asyncio
 from kademlia_node import KademliaNode
-import socket
+
 
 async def main():
-    # Determine the node role automatically
+    # Determine if this is the first or second node
     role = determine_role()
     
     if role == "first":
@@ -12,7 +12,7 @@ async def main():
         await first_node.start()
         print("First node started on port 8468.")
 
-        # Store a test key-value pair
+        # Store a key-value pair
         print("Storing a key-value pair on the first node...")
         await first_node.set("test_key", "test_value")
         print("Stored key: 'test_key', value: 'test_value'.")
@@ -43,6 +43,7 @@ async def main():
 
 def determine_role():
     """Determine the role of the node (first or second) based on port availability."""
+    import socket
     try:
         # Try binding to port 8468 to check if the first node exists
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -55,9 +56,8 @@ def determine_role():
 
 def get_first_node_ip():
     """Return the first node's IP address."""
-    # For simplicity, use a hardcoded internal or external IP address of the first node
-    # Update this with the internal/external IP address of the first VM
-    return "127.0.0.1"  # Replace with the actual IP if running on separate VMs
+    # Update this with the actual IP of the first VM
+    return "127.0.0.1"  # Replace with actual VM IP for production
 
 
 if __name__ == "__main__":
