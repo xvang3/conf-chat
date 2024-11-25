@@ -1,44 +1,65 @@
 package confchat;
 
+import rice.environment.Environment;
 import rice.pastry.*;
 import rice.pastry.socket.*;
-import rice.environment.Environment;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 public class PastryNodeExample {
     public static void main(String[] args) throws Exception {
-        // Set up the Pastry environment
+        // Create the environment
         Environment env = new Environment();
+        env.getParameters().setString("loglevel", "INFO");
 
-        // Create a RandomNodeIdFactory for generating unique node IDs
+        // Create a NodeIdFactory for generating random node IDs
         NodeIdFactory nidFactory = new rice.pastry.standard.RandomNodeIdFactory(env);
 
-        // Specify the port to bind to
-        int bindPort = 9001;
+        // Get the port from the first argument
+        int bindPort = Integer.parseInt(args[0]);
 
-        // Set up a PastryNodeFactory
-        PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindPort, env);
+        // Set up the SocketPastryNodeFactory with a binding address
+        InetSocketAddress bindAddress = new InetSocketAddress("0.0.0.0", bindPort);
+        SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindAddress.getAddress(), bindPort, env);
 
         // Create a PastryNode
         PastryNode node = factory.newNode();
+        System.out.println("Node created with ID: " + node.getId());
 
-        // Print the Node's ID to verify setup
-        System.out.println("Created new node with ID: " + node.getId().toString());
+        // Bootstrapping logic
+        if (args.length > 1) {
+            InetSocketAddress bootstrapAddress = new InetSocketAddress(args[1], Integer.parseInt(args[2]));
+            System.out.println("Bootstrapping to " + bootstrapAddress);
 
-        // Wait until the node is ready to start
-        synchronized (node) {
-            while (!node.isReady()) {
-                node.wait(500);
+            boolean bootstrapped = false;
+            while (!bootstrapped) {
+                try {
+                    node.boot(bootstrapAddress);
+                    synchronized (node) {
+                        while (!node.isReady()) {
+                            node.wait(500);
+                            System.out.print(".");
+                        }
+                    }
+                    bootstrapped = true;
+                } catch (Exception e) {
+                    System.out.println("Bootstrap failed, retrying in 5 seconds...");
+                    Thread.sleep(5000);
+                }
+            }
+        } else {
+            System.out.println("No bootstrap node provided. Starting standalone node.");
+            synchronized (node) {
+                while (!node.isReady()) {
+                    node.wait(500);
+                    System.out.print(".");
+                }
             }
         }
 
-        System.out.println("Node is ready!");
+        System.out.println("\nNode is ready!");
 
-        ChatApp app = new ChatApp(node);
-
-        // Start the command line interface
+        // Start your application
+        SimpleChatApp app = new SimpleChatApp(node);
         app.startCLI();
-
-
     }
 }

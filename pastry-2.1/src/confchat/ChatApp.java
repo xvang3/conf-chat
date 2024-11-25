@@ -57,27 +57,43 @@ public class ChatApp implements Application {
     public void startCLI() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("ChatApp CLI started. Type your messages below:");
-
+    
         while (true) {
-            System.out.println("Enter message (format: <recipientNodeId> <message>):");
-            String input = scanner.nextLine();
-            String[] parts = input.split(" ", 2);
-
-            if (parts.length != 2) {
-                System.out.println("Invalid input format. Use: <recipientNodeId> <message>");
-                continue;
-            }
-
-            String recipientIdStr = parts[0];
-            String messageText = parts[1];
-
             try {
-                // Convert recipientId string to rice.pastry.Id
+                System.out.println("Enter message (format: <recipientNodeId> <message>):");
+                if (!scanner.hasNextLine()) {
+                    System.out.println("Input stream closed. Exiting CLI.");
+                    break; // Exit gracefully if input stream is closed
+                }
+    
+                // Read and split user input
+                String input = scanner.nextLine();
+                String[] parts = input.split(" ", 2);
+    
+                // Validate input format
+                if (parts.length != 2) {
+                    System.out.println("Invalid input format. Use: <recipientNodeId> <message>");
+                    continue;
+                }
+    
+                String recipientIdStr = parts[0];
+                String messageText = parts[1];
+    
+                // Convert the recipient's ID string into a Pastry Id
                 Id recipientId = Id.build(recipientIdStr.getBytes());
+    
+                // Send the message
                 sendMessage(recipientId, node.getId().toString(), messageText);
+    
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid recipient ID format. Please ensure the ID is correct.");
             } catch (Exception e) {
-                System.out.println("Failed to send message: " + e.getMessage());
+                System.out.println("Error in CLI: " + e.getMessage());
+                e.printStackTrace(); // Log unexpected errors for debugging
             }
         }
     }
+    
+    
+    
 }

@@ -4,8 +4,8 @@ import rice.p2p.commonapi.Message;
 import java.io.Serializable;
 
 public class ChatMessage implements Message, Serializable {
-    private String sender;
-    private String content;
+    private final String sender;
+    private final String content;
 
     public ChatMessage(String sender, String content) {
         this.sender = sender;
@@ -22,12 +22,6 @@ public class ChatMessage implements Message, Serializable {
 
     @Override
     public int getPriority() {
-        // Define message priority (0 is highest priority)
         return Message.LOW_PRIORITY;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + sender + "]: " + content;
     }
 }
